@@ -19,20 +19,45 @@ namespace Polynomial
 
         public class Polynom
         {
-            private List<Node> nodes = new List<Node>();
+            public List<Node> nodes = new List<Node>();
 
-            public void add(Node node) => nodes.Add(node);
-            public void delete(Node node) => nodes.Remove(node);
-            public void deleteByPower(Node node) => nodes.RemoveAll(x => x.power == node.power);
+            public void Add(Node node) {
+                if (nodes.Any(x => node.GetPower() == x.GetPower()))
+                {
+                    nodes = nodes.Select(x =>
+                        (node.GetPower() == x.GetPower())
+                        ? new Node(x.GetK() + node.GetK(), x.GetPower())
+                        : x)
+                        .Where(x => x.GetK() != 0)
+                        .ToList();
+                }
+                else
+                    //nodes.Add(node);
+                    nodes.Insert(nodes.TakeWhile(x => x.GetPower() > node.GetPower()).Count(), node);
+                //nodes.Sort((a, b) => b.GetPower() - a.GetPower());
+            }
 
-            public string getRepresentation(string letter = "x") =>
-                string.Join(" + ", nodes.Select(x => x.k.ToString() + letter + "^" + x.power.ToString()));
+            public void Delete(Node node) => nodes.Remove(node);
+            public void DeleteByPower(Node node) => nodes.RemoveAll(x => x.GetPower() == node.GetPower());
+
+            public string GetRepresentation(string letter = "x") =>
+                string.Join(" + ", nodes.Select(x =>
+                    x.GetK().ToString() +
+                    ((x.GetPower() != 0)
+                    ? letter + "^" + x.GetPower().ToString()
+                    : ""))).Replace("+ -", "- ").Replace(",", ".");
         }
 
         public class Node
         {
-            public int power = 0;
-            public double k = 0;
+            int power = 0;
+            double k = 0;
+
+            public int GetPower() => power;
+            public void SetPower(int power) => this.power = power;
+
+            public double GetK() => k;
+            public void SetK(double k) => this.k = k;
 
             public Node(double k, int power)
             {
@@ -41,16 +66,26 @@ namespace Polynomial
             }
         }
         
-        public int stringToInt(string str) => System.Convert.ToInt32(str);
+        public int StringToInt(string str) => System.Convert.ToInt32(str);
+        public double StringToDouble(string str) => System.Convert.ToDouble(str.Replace(".", ","));
 
         Polynom p = new Polynom();
 
         private void button1_Click(object sender, EventArgs e)
         {
-            Node n = new Node(stringToInt(textBox1.Text), stringToInt(textBox2.Text));
-            p.add(n);
+            try
+            {
+                double k = StringToDouble(textBox1.Text);
+                int power = StringToInt(textBox2.Text);
 
-            textBox3.Text = p.getRepresentation();
+                Node n = new Node(k, power);
+                p.Add(n);
+
+                textBox3.Text = p.GetRepresentation();
+            } catch (Exception exep)
+            {
+                MessageBox.Show(exep.Message);
+            }          
         }
     }
 }
