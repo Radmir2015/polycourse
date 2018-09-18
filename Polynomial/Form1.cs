@@ -19,7 +19,11 @@ namespace Polynomial
 
         public class Polynom
         {
-            public List<Node> nodes = new List<Node>();
+            private List<Node> nodes = new List<Node>();
+
+            public Polynom() {}
+            public Polynom(Node node) => Add(node);
+            public Polynom(List<Node> nds) => nds.ForEach(x => Add(x));
 
             public void Add(Node node) {
                 if (nodes.Any(x => node.GetPower() == x.GetPower()))
@@ -32,10 +36,11 @@ namespace Polynomial
                         .ToList();
                 }
                 else
-                    //nodes.Add(node);
                     nodes.Insert(nodes.TakeWhile(x => x.GetPower() > node.GetPower()).Count(), node);
                 //nodes.Sort((a, b) => b.GetPower() - a.GetPower());
             }
+
+            public void Add(List<Node> nds) => nds.ForEach(x => Add(x));
 
             public void Delete(Node node) => nodes.Remove(node);
             public void DeleteByPower(Node node) => nodes.RemoveAll(x => x.GetPower() == node.GetPower());
@@ -46,6 +51,21 @@ namespace Polynomial
                     ((x.GetPower() != 0)
                     ? letter + "^" + x.GetPower().ToString()
                     : ""))).Replace("+ -", "- ").Replace(",", ".");
+
+            public bool IsEmpty() => nodes.Count() == 0;
+
+            public static Polynom operator+(Polynom f, Polynom g)
+            {
+                //return new Polynom(f.nodes.Select(x =>
+                //    (g.nodes.FirstOrDefault(y => y.GetPower() == x.GetPower()) ?? g.nodes.FirstOrDefault()).Equals(null)
+                //    ? new Node(x.GetK() + g.nodes.FirstOrDefault(y => y.GetPower() == x.GetPower()).GetK(), x.GetPower())
+                //    : x).ToList());
+
+
+                Polynom res = new Polynom(f.nodes);
+                res.Add(g.nodes);
+                return res;
+            }
         }
 
         public class Node
@@ -70,6 +90,8 @@ namespace Polynomial
         public double StringToDouble(string str) => System.Convert.ToDouble(str.Replace(".", ","));
 
         Polynom p = new Polynom();
+        Polynom f = new Polynom();
+        Polynom result = new Polynom();
 
         private void button1_Click(object sender, EventArgs e)
         {
@@ -82,10 +104,33 @@ namespace Polynomial
                 p.Add(n);
 
                 textBox3.Text = p.GetRepresentation();
-            } catch (Exception exep)
+            }
+            catch (Exception exep)
             {
                 MessageBox.Show(exep.Message);
-            }          
+            }
+        }
+        private void button2_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                double k = StringToDouble(textBox1.Text);
+                int power = StringToInt(textBox2.Text);
+
+                Node n = new Node(k, power);
+                f.Add(n);
+
+                textBox4.Text = f.GetRepresentation();
+            }
+            catch (Exception exep)
+            {
+                MessageBox.Show(exep.Message);
+            }
+        }
+        private void button3_Click(object sender, EventArgs e)
+        {
+            result = p + f;
+            textBox5.Text = result.GetRepresentation();
         }
     }
 }
