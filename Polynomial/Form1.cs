@@ -57,14 +57,20 @@ namespace Polynomial
             public static Polynom operator+(Polynom f, Polynom g)
             {
                 //return new Polynom(f.nodes.Select(x =>
-                //    (g.nodes.FirstOrDefault(y => y.GetPower() == x.GetPower()) ?? g.nodes.FirstOrDefault()).Equals(null)
-                //    ? new Node(x.GetK() + g.nodes.FirstOrDefault(y => y.GetPower() == x.GetPower()).GetK(), x.GetPower())
-                //    : x).ToList());
-
+                //!g.nodes.FirstOrDefault(y => y.GetPower() == x.GetPower()).Equals(default(Node))
+                //? new Node(x.GetK() + g.nodes.FirstOrDefault(y => y.GetPower() == x.GetPower()).GetK(), x.GetPower())
+                //: x).ToList());
 
                 Polynom res = new Polynom(f.nodes);
                 res.Add(g.nodes);
                 return res;
+            }
+
+            public static Polynom operator*(Polynom f, Polynom g)
+            {
+                return new Polynom((from fNode in f.nodes
+                                   from gNode in g.nodes
+                                   select new Node(fNode.GetK() * gNode.GetK(), fNode.GetPower() + gNode.GetPower())).ToList());
             }
         }
 
@@ -130,6 +136,12 @@ namespace Polynomial
         private void button3_Click(object sender, EventArgs e)
         {
             result = p + f;
+            textBox5.Text = result.GetRepresentation();
+        }
+
+        private void button4_Click(object sender, EventArgs e)
+        {
+            result = p * f;
             textBox5.Text = result.GetRepresentation();
         }
     }
