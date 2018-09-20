@@ -49,9 +49,9 @@ namespace Polynomial
 
             public string GetRepresentation(string letter = "x") =>
                 string.Join(" + ", nodes.Select(x =>
-                    x.GetK() == 1 ? "" : x.GetK().ToString() +
+                    ((x.GetK() == 1 && x.GetPower() != 0) ? "" : (x.GetK() == 1 ? "1" : x.GetK().ToString())) +
                     ((x.GetPower() != 0)
-                    ? letter + (x.GetPower() == 1 ? "" : ("^" + x.GetPower().ToString()))
+                    ? (letter + (x.GetPower() == 1 ? "" : ("^" + x.GetPower().ToString())))
                     : ""))).Replace("+ -", "- ").Replace(",", ".");
 
             public bool IsEmpty() => nodes.Count() == 0;
@@ -157,13 +157,17 @@ namespace Polynomial
 
             MessageBox.Show(Regex.Replace(textBox3.Text, @"(?<=[0-9a-zA-Z]+)([\+-])", " $1"));
 
-            first = Regex.Split(Regex.Replace(textBox3.Text, @"(?<=[0-9a-zA-Z]+)([\+-])", " $1"), @"\s+(?=[\+-])").Select(x => x.Trim()).ToArray();
+            first = Regex.Split(Regex.Replace(textBox3.Text, @"(?<=[0-9a-zA-Z]+)([\+-])", " $1"), @"(?<=[0-9a-zA-Z]+)\s+(?=[\+-])").Select(x => x.Trim()).ToArray();
+            MessageBox.Show(string.Join(";", first));
+
+            first = first.Select(x => Regex.Replace(x, @"\s+", "")).ToArray();
             MessageBox.Show(string.Join(";", first));
 
             p.Clear();
             //Console.WriteLine(string.Join(";", ));
             //Regex regex = new Regex(@"(\d*)\s*\*?\s*([a-zA-Z]?)\s*\^?\s*(\d*)");
-            Regex regex = new Regex(@"([\+-]?\d*)\s*\*?\s*([a-zA-Z]?)\s*\^?\s*([\+-]?\d*)");
+            //Regex regex = new Regex(@"([\+-]?(?:\s*)\d*)\s*\*?\s*([a-zA-Z]?)\s*\^?\s*([\+-]?(?:\s*)\d*)");
+            Regex regex = new Regex(@"([\+-]?\d*)\*?([a-zA-Z]?)\^?([\+-]?\d*)");
 
             foreach (string node in first)
             {
