@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Text.RegularExpressions;
 
 namespace Polynomial
 {
@@ -143,6 +144,16 @@ namespace Polynomial
         {
             result = p * f;
             textBox5.Text = result.GetRepresentation();
+        }
+
+        private void button5_Click(object sender, EventArgs e)
+        {
+            string[] tests = { "3x^2+5  *x^2 -6", "-7x", "-2 * x ^ 4 - 17x^2  " };
+            var first = tests[0].Split(new char[] { '+', '-' }).Select(x => x.Trim()).ToArray();
+            //Console.WriteLine(string.Join(";", ));
+            Regex regex = new Regex(@"(\d*)\*?([a-zA-Z]?)\^?(\d*)");
+            Match match = regex.Match(first[1]);
+            textBox5.Text = match.Groups[1].Value + " " + match.Groups[2].Value + " " + match.Groups[3].Value;
         }
     }
 }
