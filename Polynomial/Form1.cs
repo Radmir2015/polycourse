@@ -25,13 +25,33 @@ namespace Polynomial
             public Polynom() {}
             public Polynom(Node node) => Add(node);
             public Polynom(List<Node> nds) => nds.ForEach(x => Add(x));
+            public Polynom(string expression)
+            {
+                string[] unprocessedNodes = Regex.Split(Regex.Replace(expression, @"(?<=[0-9a-zA-Z]+)([\+-])", " $1"), @"(?<=[0-9a-zA-Z]+)\s+(?=[\+-])").Select(x => x.Trim()).ToArray();
+                unprocessedNodes = unprocessedNodes.Select(x => Regex.Replace(x, @"\s+", "")).ToArray();
+                
+                //Regex regex = new Regex(@"([\+-]?(?:\s*)\d*)\s*\*?\s*([a-zA-Z]?)\s*\^?\s*([\+-]?(?:\s*)\d*)");
+                Regex regex = new Regex(@"([\+-]?\d*)\*?([a-zA-Z]?)\^?([\+-]?\d*)");
+
+                foreach (string node in unprocessedNodes)
+                {
+                    Match match = regex.Match(node);
+                    if (match.Groups[1].Value == "" && match.Groups[2].Value == "" || unprocessedNodes.Any(x => x == ""))
+                    {
+                        MessageBox.Show("Fatal error");
+                        break;
+                    }
+                    Add(new Node((match.Groups[1].Value == "" || match.Groups[1].Value == "+") ? 1 : (match.Groups[1].Value == "-" ? -1 : StringToDouble(match.Groups[1].Value)), match.Groups[3].Value == "" ? (match.Groups[2].Value == "" ? 0 : (match.Groups[2].Value == "-" ? -1 : 1)) : StringToInt(match.Groups[3].Value), match.Groups[2].Value));
+                }
+            }
 
             public void Add(Node node) {
-                if (nodes.Any(x => node.GetPower() == x.GetPower()))
+
+                if (nodes.Any(x => node.GetLetter() == x.GetLetter()) && nodes.Any(x => node.GetPower() == x.GetPower()))
                 {
                     nodes = nodes.Select(x =>
-                        (node.GetPower() == x.GetPower())
-                        ? new Node(x.GetK() + node.GetK(), x.GetPower())
+                        (node.GetPower() == x.GetPower() && node.GetLetter() == x.GetLetter())
+                        ? new Node(x.GetK() + node.GetK(), x.GetPower(), x.GetLetter())
                         : x)
                         .Where(x => x.GetK() != 0)
                         .ToList();
@@ -47,11 +67,11 @@ namespace Polynomial
             public void DeleteByPower(Node node) => nodes.RemoveAll(x => x.GetPower() == node.GetPower());
             public void Clear() => nodes.Clear();
 
-            public string GetRepresentation(string letter = "x") =>
+            public string GetRepresentation() =>
                 string.Join(" + ", nodes.Select(x =>
                     ((x.GetK() == 1 && x.GetPower() != 0) ? "" : (x.GetK() == 1 ? "1" : x.GetK().ToString())) +
                     ((x.GetPower() != 0)
-                    ? (letter + (x.GetPower() == 1 ? "" : ("^" + x.GetPower().ToString())))
+                    ? (x.GetLetter() + (x.GetPower() == 1 ? "" : ("^" + x.GetPower().ToString())))
                     : ""))).Replace("+ -", "- ").Replace(",", ".");
 
             public bool IsEmpty() => nodes.Count() == 0;
@@ -80,6 +100,7 @@ namespace Polynomial
         {
             int power = 0;
             double k = 0;
+            string letter = "x";
 
             public int GetPower() => power;
             public void SetPower(int power) => this.power = power;
@@ -87,15 +108,19 @@ namespace Polynomial
             public double GetK() => k;
             public void SetK(double k) => this.k = k;
 
-            public Node(double k, int power)
+            public string GetLetter() => letter;
+            public void SetLetter(string letter) => this.letter = letter;
+
+            public Node(double k, int power, string letter = "x")
             {
                 this.k = k;
                 this.power = power;
+                this.letter = letter;
             }
         }
         
-        public int StringToInt(string str) => System.Convert.ToInt32(str);
-        public double StringToDouble(string str) => System.Convert.ToDouble(str.Replace(".", ","));
+        public static int StringToInt(string str) => System.Convert.ToInt32(str);
+        public static double StringToDouble(string str) => System.Convert.ToDouble(str.Replace(".", ","));
 
         Polynom p = new Polynom();
         Polynom f = new Polynom();
@@ -149,39 +174,17 @@ namespace Polynomial
 
         private void button5_Click(object sender, EventArgs e)
         {
-            string[] tests = { "3x^2+5  *x^2 -6", "-7x", "-2 * x ^ 4 - 17x^2  " };
-            var first = tests[0].Split(new char[] { '+', '-' }).Select(x => x.Trim()).ToArray();
-            first = textBox3.Text.Split(new char[] { '+', '-' }).Select(x => x.Trim()).ToArray();
-
-            //first = Regex.Split(textBox3.Text.Replace("-", " -").Replace("+", " +"), @"\w*(?=[\+-])").Select(x => x.Trim()).ToArray();
-
-            MessageBox.Show(Regex.Replace(textBox3.Text, @"(?<=[0-9a-zA-Z]+)([\+-])", " $1"));
-
-            first = Regex.Split(Regex.Replace(textBox3.Text, @"(?<=[0-9a-zA-Z]+)([\+-])", " $1"), @"(?<=[0-9a-zA-Z]+)\s+(?=[\+-])").Select(x => x.Trim()).ToArray();
-            MessageBox.Show(string.Join(";", first));
-
-            first = first.Select(x => Regex.Replace(x, @"\s+", "")).ToArray();
-            MessageBox.Show(string.Join(";", first));
-
             p.Clear();
-            //Console.WriteLine(string.Join(";", ));
-            //Regex regex = new Regex(@"(\d*)\s*\*?\s*([a-zA-Z]?)\s*\^?\s*(\d*)");
-            //Regex regex = new Regex(@"([\+-]?(?:\s*)\d*)\s*\*?\s*([a-zA-Z]?)\s*\^?\s*([\+-]?(?:\s*)\d*)");
-            Regex regex = new Regex(@"([\+-]?\d*)\*?([a-zA-Z]?)\^?([\+-]?\d*)");
+            p = new Polynom(textBox3.Text);
+            textBox3.Text = p.GetRepresentation(); //match.Groups[1].Value + " " + match.Groups[2].Value + " " + match.Groups[3].Value;
 
-            foreach (string node in first)
-            {
-                Match match = regex.Match(node);
-                MessageBox.Show(match.Groups[1].Value + "|" + match.Groups[2].Value + "|" + match.Groups[3].Value);
-                if (match.Groups[1].Value == "" && match.Groups[2].Value == "" || first.Any(x => x == ""))
-                {
-                    MessageBox.Show("Fatal error");
-                    break;
-                }
-                p.Add(new Node((match.Groups[1].Value == "" || match.Groups[1].Value == "+") ? 1 : (match.Groups[1].Value == "-" ? -1 : StringToDouble(match.Groups[1].Value)), match.Groups[3].Value == "" ? (match.Groups[2].Value == "" ? 0 : (match.Groups[2].Value == "-" ? -1 : 1)) : StringToInt(match.Groups[3].Value)));
-            }
-            textBox5.Text = p.GetRepresentation("x"); //match.Groups[1].Value + " " + match.Groups[2].Value + " " + match.Groups[3].Value;
+        }
 
+        private void button6_Click(object sender, EventArgs e)
+        {
+            f.Clear();
+            f = new Polynom(textBox4.Text);
+            textBox4.Text = f.GetRepresentation();
         }
     }
 }
