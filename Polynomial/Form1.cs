@@ -20,11 +20,11 @@ namespace Polynomial
 
         public class Polynom
         {
-            private List<Node> nodes = new List<Node>();
+            private List<List<Node>> nodes = new List<List<Node>>();
 
             public Polynom() {}
-            public Polynom(Node node) => Add(node);
-            public Polynom(List<Node> nds) => nds.ForEach(x => Add(x));
+            public Polynom(List<Node> node) => Add(node);
+            public Polynom(List<List<Node>> nds) => nds.ForEach(x => Add(x));
             public Polynom(string expression)
             {
                 string[] unprocessedNodes = Regex.Split(Regex.Replace(expression, @"(?<=[0-9a-zA-Z]+)([\+-])", " $1"), @"(?<=[0-9a-zA-Z]+)\s+(?=[\+-])").Select(x => x.Trim()).ToArray();
@@ -33,46 +33,114 @@ namespace Polynomial
                 //Regex regex = new Regex(@"([\+-]?(?:\s*)\d*)\s*\*?\s*([a-zA-Z]?)\s*\^?\s*([\+-]?(?:\s*)\d*)");
                 Regex regex = new Regex(@"([\+-]?\d*)\*?([a-zA-Z]?)\^?([\+-]?\d*)");
 
+                MessageBox.Show(string.Join(";", unprocessedNodes));
+
                 foreach (string node in unprocessedNodes)
                 {
-                    Match match = regex.Match(node);
-                    if (match.Groups[1].Value == "" && match.Groups[2].Value == "" || unprocessedNodes.Any(x => x == ""))
+                    List<Node> temp = new List<Node>();
+                    MatchCollection matches = regex.Matches(node);
+                    
+                    for (int i = 0; i < matches.Count - 1; i++)
                     {
-                        MessageBox.Show("Fatal error");
-                        break;
+                        Match match = matches[i];
+
+                        MessageBox.Show(match.Groups[1].Value + ";" + match.Groups[2].Value + ";" + match.Groups[3].Value);
+
+                        if (match.Groups[1].Value == "" && match.Groups[2].Value == "" || unprocessedNodes.Any(x => x == ""))
+                        {
+                            MessageBox.Show("Fatal error");
+                            break;
+                        }
+                        temp.Add(new Node((match.Groups[1].Value == "" || match.Groups[1].Value == "+") ? 1 : (match.Groups[1].Value == "-" ? -1 : StringToDouble(match.Groups[1].Value)), match.Groups[3].Value == "" ? (match.Groups[2].Value == "" ? 0 : (match.Groups[2].Value == "-" ? -1 : 1)) : StringToInt(match.Groups[3].Value), match.Groups[2].Value));
                     }
-                    Add(new Node((match.Groups[1].Value == "" || match.Groups[1].Value == "+") ? 1 : (match.Groups[1].Value == "-" ? -1 : StringToDouble(match.Groups[1].Value)), match.Groups[3].Value == "" ? (match.Groups[2].Value == "" ? 0 : (match.Groups[2].Value == "-" ? -1 : 1)) : StringToInt(match.Groups[3].Value), match.Groups[2].Value));
+                    Add(temp);
                 }
             }
 
-            public void Add(Node node) {
+            //public void Add(Node node) {
 
-                if (nodes.Any(x => node.GetLetter() == x.GetLetter()) && nodes.Any(x => node.GetPower() == x.GetPower()))
+            //    if (nodes.Any(x => node.GetLetter() == x.GetLetter()) && nodes.Any(x => node.GetPower() == x.GetPower()))
+            //    {
+            //        nodes = nodes.Select(x =>
+            //            (node.GetPower() == x.GetPower() && node.GetLetter() == x.GetLetter())
+            //            ? new Node(x.GetK() + node.GetK(), x.GetPower(), x.GetLetter())
+            //            : x)
+            //            .Where(x => x.GetK() != 0)
+            //            .ToList();
+            //    }
+            //    else
+            //        nodes.Insert(nodes.TakeWhile(x => x.GetPower() > node.GetPower()).Count(), node);
+            //    //nodes.Sort((a, b) => b.GetPower() - a.GetPower());
+            //}
+
+            bool CompareSets(List<Node> aNode, List<Node> bNode)
+            {
+                return CompareLetters(aNode, bNode) && ComparePowers(aNode, bNode) == 0 &&
+                aNode.All(x => bNode.First(y => y.GetLetter() == x.GetLetter()).GetPower() == x.GetPower());
+            }
+
+            bool CompareLetters(List<Node> aNode, List<Node> bNode)
+            {
+                HashSet<string> aLetters = new HashSet<string>();
+                HashSet<string> bLetters = new HashSet<string>();
+                aNode.ForEach(x => aLetters.Add(x.GetLetter()));
+                bNode.ForEach(x => bLetters.Add(x.GetLetter()));
+
+                return aLetters.SetEquals(bLetters);
+            }
+
+            int ComparePowers(List<Node> aNode, List<Node> bNode)
+            {
+                return aNode.Sum(x => x.GetPower()) - bNode.Sum(x => x.GetPower());
+            }
+
+            public void Add(List<Node> node)
+            {
+                
+                if (nodes.Any(x => CompareLetters(node, x)) && nodes.Any(x => ComparePowers(node, x) == 0))
                 {
-                    nodes = nodes.Select(x =>
-                        (node.GetPower() == x.GetPower() && node.GetLetter() == x.GetLetter())
-                        ? new Node(x.GetK() + node.GetK(), x.GetPower(), x.GetLetter())
-                        : x)
-                        .Where(x => x.GetK() != 0)
-                        .ToList();
+                    for (int i = 0; i < nodes.Count(); i++)
+                    {
+                        if (CompareSets(nodes[i], node))
+                        {
+                            //nodes[i] = new List<Node> { };
+                            //nodes[i].ForEach(x => new Node(node.First(y => y.GetPower() == x.GetPower())));
+                            nodes[i][0].SetK(node[0].GetK() + nodes[i][0].GetK());
+                        }
+                    }
+
+                    nodes = nodes.Where(x => x[0].GetK() != 0).ToList();
+
+                    //nodes = nodes.Select(x =>
+                    //    CompareSets(x, node)
+                    //    ? new List<Node> { new Node(x.GetK() + node.ElementAt(0).GetK(), x.GetPower(), x.GetLetter()) }
+                    //    : x)
+                    //    .Where(x => x.GetK() != 0)
+                    //    .ToList();
                 }
                 else
-                    nodes.Insert(nodes.TakeWhile(x => x.GetPower() > node.GetPower()).Count(), node);
+                    nodes.Insert(nodes.TakeWhile(x => ComparePowers(x, node) > 0).Count(), node);
                 //nodes.Sort((a, b) => b.GetPower() - a.GetPower());
             }
 
-            public void Add(List<Node> nds) => nds.ForEach(x => Add(x));
+            public void Add(List<List<Node>> nds) => nds.ForEach(x => Add(x));
 
-            public void Delete(Node node) => nodes.Remove(node);
-            public void DeleteByPower(Node node) => nodes.RemoveAll(x => x.GetPower() == node.GetPower());
+            public void Delete(List<Node> node) => nodes.Remove(node);
+            //public void DeleteByPower(Node node) => nodes.RemoveAll(x => x.GetPower() == node.GetPower());
             public void Clear() => nodes.Clear();
 
-            public string GetRepresentation() =>
-                string.Join(" + ", nodes.Select(x =>
-                    ((x.GetK() == 1 && x.GetPower() != 0) ? "" : (x.GetK() == 1 ? "1" : x.GetK().ToString())) +
-                    ((x.GetPower() != 0)
-                    ? (x.GetLetter() + (x.GetPower() == 1 ? "" : ("^" + x.GetPower().ToString())))
-                    : ""))).Replace("+ -", "- ").Replace(",", ".");
+            //public string GetRepresentation() =>
+            //    string.Join(" + ", nodes.Select(x =>
+            //        ((x.GetK() == 1 && x.GetPower() != 0) ? "" : (x.GetK() == 1 ? "1" : x.GetK().ToString())) +
+            //        ((x.GetPower() != 0)
+            //        ? (x.GetLetter() + (x.GetPower() == 1 ? "" : ("^" + x.GetPower().ToString())))
+            //        : ""))).Replace("+ -", "- ").Replace(",", ".");
+            public string GetRepresentation()
+            {
+                return string.Join(" + ", nodes.Select(x =>
+                    x[0].GetK() + string.Join(" * ", x.Select(y => y.GetLetter() + "^" + y.GetPower()))
+                ));
+            }
 
             public bool IsEmpty() => nodes.Count() == 0;
 
@@ -88,12 +156,12 @@ namespace Polynomial
                 return res;
             }
 
-            public static Polynom operator*(Polynom f, Polynom g)
-            {
-                return new Polynom((from fNode in f.nodes
-                                   from gNode in g.nodes
-                                   select new Node(fNode.GetK() * gNode.GetK(), fNode.GetPower() + gNode.GetPower())).ToList());
-            }
+            //public static Polynom operator*(Polynom f, Polynom g)
+            //{
+            //    return new Polynom((from fNode in f.nodes
+            //                       from gNode in g.nodes
+            //                       select new Node(fNode.GetK() * gNode.GetK(), fNode.GetPower() + gNode.GetPower())).ToList());
+            //}
         }
 
         public class Node
@@ -134,7 +202,7 @@ namespace Polynomial
                 int power = StringToInt(textBox2.Text);
 
                 Node n = new Node(k, power);
-                p.Add(n);
+                p.Add(new List<Node> { n });
 
                 textBox3.Text = p.GetRepresentation();
             }
@@ -151,7 +219,7 @@ namespace Polynomial
                 int power = StringToInt(textBox2.Text);
 
                 Node n = new Node(k, power);
-                f.Add(n);
+                f.Add(new List<Node> { n });
 
                 textBox4.Text = f.GetRepresentation();
             }
@@ -168,7 +236,7 @@ namespace Polynomial
 
         private void button4_Click(object sender, EventArgs e)
         {
-            result = p * f;
+            //result = p * f;
             textBox5.Text = result.GetRepresentation();
         }
 
