@@ -65,7 +65,7 @@ namespace Polynomial
 
                         int tempPower = match.Groups[3].Value == ""
                                         ? (match.Groups[2].Value == ""
-                                            ? 0
+                                            ? 1
                                             : (match.Groups[2].Value == "-"
                                                 ? -1
                                                 : 1))
@@ -165,11 +165,30 @@ namespace Polynomial
             public string GetRepresentation()
             {
                 return string.Join(" + ", nodes.Select(x =>
-                    x.GetK() + string.Join(" * ", x.GetDict().Select(y => y.Key + "^" + y.Value))
-                ));
+                    (Math.Abs(x.GetK()) != 1 ? x.GetK().ToString() : (x.GetK() < 0 ? "-" : ""))
+                    + string.Join(" * ", x.GetDict().Select(y =>
+                        y.Key + ((y.Value != 1)
+                            ? ("^" + y.Value)
+                            : "")))
+                        )).Replace("+ -", "- ").Replace(",", ".");
             }
 
             public bool IsEmpty() => nodes.Count() == 0;
+
+            public static Dictionary<string, int> MultiplyPowers(Dictionary<string, int> aNode, Dictionary<string, int> bNode)
+            {
+                Dictionary<string, int> lessLetters = aNode.Count(x => x.Key != "") > bNode.Count(x => x.Key != "") ? bNode : aNode;
+                Dictionary<string, int> moreLetters = aNode.Count(x => x.Key != "") <= bNode.Count(x => x.Key != "") ? bNode : aNode;
+                foreach (var x in lessLetters.Where(x => x.Key != ""))
+                {
+                    if (!moreLetters.ContainsKey(x.Key))
+                        moreLetters[x.Key] = 1;
+                    moreLetters[x.Key] = x.Value + moreLetters[x.Key];
+                }
+                    
+
+                return moreLetters;
+            }
 
             public static Polynom operator+(Polynom f, Polynom g)
             {
@@ -178,18 +197,18 @@ namespace Polynomial
                 //? new Node(x.GetK() + g.nodes.FirstOrDefault(y => y.GetPower() == x.GetPower()).GetK(), x.GetPower())
                 //: x).ToList());
 
-                Polynom res = new Polynom();
-                res.Add(f.nodes);
+                Polynom res = new Polynom(f.nodes.Select(x => new Node(x.GetK(), x.GetDict())).ToList());
+                //f.nodes.Select(x => new Node(x.GetK(), x.GetDict()));
                 res.Add(g.nodes);
                 return res;
             }
 
-            //public static Polynom operator*(Polynom f, Polynom g)
-            //{
-            //    return new Polynom((from fNode in f.nodes
-            //                       from gNode in g.nodes
-            //                       select new Node(fNode.GetK() * gNode.GetK(), fNode.GetPower() + gNode.GetPower())).ToList());
-            //}
+            public static Polynom operator*(Polynom f, Polynom g)
+            {
+                return new Polynom((from fNode in f.nodes
+                                    from gNode in g.nodes
+                                    select new Node(fNode.GetK() * gNode.GetK(), MultiplyPowers(fNode.GetDict(), gNode.GetDict()))).ToList());
+            }
         }
 
         public class Node
@@ -211,7 +230,11 @@ namespace Polynomial
             public Dictionary<string, int> GetDict() => letterPower;
 
             public Node() { }
-
+            public Node(double k, Dictionary<string, int> dict)
+            {
+                this.k = k;
+                letterPower = dict;
+            }
             public Node(double k, int power, string letter = "x")
             {
                 this.k = k;
@@ -235,8 +258,7 @@ namespace Polynomial
                 double k = StringToDouble(textBox1.Text);
                 int power = StringToInt(textBox2.Text);
 
-                Node n = new Node(k, power);
-                p.Add(new List<Node> { n });
+                p.Add(new Node(k, power));
 
                 textBox3.Text = p.GetRepresentation();
             }
@@ -252,8 +274,7 @@ namespace Polynomial
                 double k = StringToDouble(textBox1.Text);
                 int power = StringToInt(textBox2.Text);
 
-                Node n = new Node(k, power);
-                f.Add(new List<Node> { n });
+                f.Add(new Node(k, power));
 
                 textBox4.Text = f.GetRepresentation();
             }
@@ -273,7 +294,8 @@ namespace Polynomial
 
         private void button4_Click(object sender, EventArgs e)
         {
-            //result = p * f;
+            result.Clear();
+            result = p * f;
             textBox5.Text = result.GetRepresentation();
         }
 
