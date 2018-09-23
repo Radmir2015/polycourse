@@ -145,7 +145,7 @@ namespace Polynomial
                     //    .ToList();
                 }
                 else
-                    nodes.Insert(nodes.TakeWhile(x => ComparePowers(x, node) > 0).Count(), node);
+                    nodes.Insert(nodes.TakeWhile(x => ComparePowers(x, node) >= 0).Count(), node);
                 //nodes.Sort((a, b) => b.GetPower() - a.GetPower());
             }
 
@@ -164,13 +164,17 @@ namespace Polynomial
             //        : ""))).Replace("+ -", "- ").Replace(",", ".");
             public string GetRepresentation()
             {
-                return string.Join(" + ", nodes.Select(x =>
-                    (Math.Abs(x.GetK()) != 1 ? x.GetK().ToString() : (x.GetK() < 0 ? "-" : ""))
-                    + string.Join(" * ", x.GetDict().Select(y =>
-                        y.Key + ((y.Value != 1)
-                            ? ("^" + y.Value)
-                            : "")))
-                        )).Replace("+ -", "- ").Replace(",", ".");
+                return nodes.Count() == 0 ? "0" :
+                    string.Join(" + ", nodes.Select(x =>
+                        (Math.Abs(x.GetK()) != 1 ? x.GetK().ToString() : (x.GetK() < 0 ? "-" : ""))
+                        + string.Join(" * ", x.GetDict().Select(y =>
+                            ((y.Key == "" && Math.Abs(x.GetK()) == 1)
+                            ? Math.Abs(x.GetK()).ToString()
+                            : "") +
+                            y.Key + ((y.Value != 1)
+                                ? ("^" + y.Value)
+                                : "")))
+                            )).Replace("+ -", "- ").Replace(",", ".");
             }
 
             public bool IsEmpty() => nodes.Count() == 0;
@@ -182,10 +186,9 @@ namespace Polynomial
                 foreach (var x in lessLetters.Where(x => x.Key != ""))
                 {
                     if (!moreLetters.ContainsKey(x.Key))
-                        moreLetters[x.Key] = 1;
-                    moreLetters[x.Key] = x.Value + moreLetters[x.Key];
+                        moreLetters[x.Key] = 0;
+                    moreLetters[x.Key] += x.Value;
                 }
-                    
 
                 return moreLetters;
             }
@@ -207,7 +210,7 @@ namespace Polynomial
             {
                 return new Polynom((from fNode in f.nodes
                                     from gNode in g.nodes
-                                    select new Node(fNode.GetK() * gNode.GetK(), MultiplyPowers(fNode.GetDict(), gNode.GetDict()))).ToList());
+                                    select new Node(fNode.GetK() * gNode.GetK(), MultiplyPowers(fNode.GetDict().ToDictionary(k => k.Key, k => k.Value), gNode.GetDict().ToDictionary(k => k.Key, k => k.Value)))).ToList());
             }
         }
 
