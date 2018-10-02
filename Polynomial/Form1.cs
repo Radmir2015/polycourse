@@ -16,6 +16,9 @@ namespace Polynomial
         public Form1()
         {
             InitializeComponent();
+
+            openFileDialog1.Filter = "Text files(*.txt)|*.txt|All files(*.*)|*.*";
+            saveFileDialog1.Filter = "Text files(*.txt)|*.txt|All files(*.*)|*.*";
         }
 
         public class Polynom
@@ -36,9 +39,9 @@ namespace Polynomial
                 unprocessedNodes = unprocessedNodes.Select(x => Regex.Replace(x, @"\s+", "")).ToArray();
                 
                 //Regex regex = new Regex(@"([\+-]?(?:\s*)\d*)\s*\*?\s*([a-zA-Z]?)\s*\^?\s*([\+-]?(?:\s*)\d*)");
-                Regex regex = new Regex(@"([\+-]?\d*)\*?([a-zA-Z]?)\^?([\+-]?\d*)");
+                Regex regex = new Regex(@"([\+-]?\d*\.?\d*)\*?([a-zA-Z]?)\^?([\+-]?\d*)");
 
-                MessageBox.Show(string.Join(";", unprocessedNodes));
+                //MessageBox.Show(string.Join(";", unprocessedNodes));
 
                 foreach (string node in unprocessedNodes)
                 {
@@ -49,7 +52,7 @@ namespace Polynomial
                     {
                         Match match = matches[i];
 
-                        MessageBox.Show(match.Groups[1].Value + ";" + match.Groups[2].Value + ";" + match.Groups[3].Value);
+                        //MessageBox.Show(match.Groups[1].Value + ";" + match.Groups[2].Value + ";" + match.Groups[3].Value);
 
                         if (match.Groups[1].Value == "" && match.Groups[2].Value == "" || unprocessedNodes.Any(x => x == ""))
                         {
@@ -82,28 +85,10 @@ namespace Polynomial
                 }
             }
 
-            //public void Add(Node node) {
-
-            //    if (nodes.Any(x => node.GetLetter() == x.GetLetter()) && nodes.Any(x => node.GetPower() == x.GetPower()))
-            //    {
-            //        nodes = nodes.Select(x =>
-            //            (node.GetPower() == x.GetPower() && node.GetLetter() == x.GetLetter())
-            //            ? new Node(x.GetK() + node.GetK(), x.GetPower(), x.GetLetter())
-            //            : x)
-            //            .Where(x => x.GetK() != 0)
-            //            .ToList();
-            //    }
-            //    else
-            //        nodes.Insert(nodes.TakeWhile(x => x.GetPower() > node.GetPower()).Count(), node);
-            //    //nodes.Sort((a, b) => b.GetPower() - a.GetPower());
-            //}
-
             bool CompareSets(Node aNode, Node bNode)
             {
                 return CompareLetters(aNode, bNode)
                     && aNode.GetDict().Keys.All(x => aNode.GetPower(x) == bNode.GetPower(x));
-                //return CompareLetters(aNode, bNode) && ComparePowers(aNode, bNode) == 0 &&
-                //aNode.All(x => bNode.First(y => y.GetLetter() == x.GetLetter()).GetPower() == x.GetPower());
             }
 
             bool CompareLetters(Node aNode, Node bNode)
@@ -121,47 +106,29 @@ namespace Polynomial
 
             public void Add(Node node)
             {
-                
-                if (nodes.Any(x => CompareLetters(node, x)) && nodes.Any(x => ComparePowers(node, x) == 0))
+                Node temp = new Node(node.GetK(), node.GetCopiedDict());
+                if (nodes.Any(x => CompareLetters(node, x) && ComparePowers(node, x) == 0)) // && nodes.Any(x => ComparePowers(node, x) == 0))
                 {
-                    for (int i = 0; i < nodes.Count(); i++)
-                    {
+                    int count = nodes.Count();
+                    for (int i = 0; i < count; i++)
                         if (CompareSets(nodes[i], node))
-                        {
-                            //nodes[i] = new List<Node> { };
-                            //nodes[i].ForEach(x => new Node(node.First(y => y.GetPower() == x.GetPower())));
                             nodes[i].SetK(nodes[i].GetK() + node.GetK());
-                            //nodes[i][0].SetK(node[0].GetK() + nodes[i][0].GetK());
-                        }
-                    }
-
-                    nodes = nodes.Where(x => x.GetK() != 0).ToList();
-
-                    //nodes = nodes.Select(x =>
-                    //    CompareSets(x, node)
-                    //    ? new List<Node> { new Node(x.GetK() + node.ElementAt(0).GetK(), x.GetPower(), x.GetLetter()) }
-                    //    : x)
-                    //    .Where(x => x.GetK() != 0)
-                    //    .ToList();
+                    //nodes = nodes.Where(x => x.GetK() != 0).ToList();
                 }
                 else
-                    nodes.Insert(nodes.TakeWhile(x => ComparePowers(x, node) >= 0).Count(), node);
-                //nodes.Sort((a, b) => b.GetPower() - a.GetPower());
+                    nodes.Insert(nodes.TakeWhile(x => ComparePowers(x, node) >= 0).Count(), temp);
+                nodes = nodes.Where(x => x.GetK() != 0).ToList();
             }
 
             public void Add(List<Node> nds) => nds.ForEach(x => Add(x));
 
             public void Delete(Node node) => nodes.Remove(node);
-            //public void DeleteByPower(Node node) => nodes.RemoveAll(x => x.GetPower() == node.GetPower());
+            public void DeleteByPower(int power) => nodes.RemoveAll(x => x.GetFullPower() == power);
             public void Clear() => nodes.Clear();
             public int AmountOfSums() => nodes.Count();
 
-            //public string GetRepresentation() =>
-            //    string.Join(" + ", nodes.Select(x =>
-            //        ((x.GetK() == 1 && x.GetPower() != 0) ? "" : (x.GetK() == 1 ? "1" : x.GetK().ToString())) +
-            //        ((x.GetPower() != 0)
-            //        ? (x.GetLetter() + (x.GetPower() == 1 ? "" : ("^" + x.GetPower().ToString())))
-            //        : ""))).Replace("+ -", "- ").Replace(",", ".");
+            public List<Node> GetNodes() => nodes;
+
             public string GetRepresentation()
             {
                 return nodes.Count() == 0 ? "0" :
@@ -195,13 +162,7 @@ namespace Polynomial
 
             public static Polynom operator+(Polynom f, Polynom g)
             {
-                //return new Polynom(f.nodes.Select(x =>
-                //!g.nodes.FirstOrDefault(y => y.GetPower() == x.GetPower()).Equals(default(Node))
-                //? new Node(x.GetK() + g.nodes.FirstOrDefault(y => y.GetPower() == x.GetPower()).GetK(), x.GetPower())
-                //: x).ToList());
-
-                Polynom res = new Polynom(f.nodes.Select(x => new Node(x.GetK(), x.GetDict())).ToList());
-                //f.nodes.Select(x => new Node(x.GetK(), x.GetDict()));
+                Polynom res = new Polynom(f.nodes);
                 res.Add(g.nodes);
                 return res;
             }
@@ -210,16 +171,14 @@ namespace Polynomial
             {
                 return new Polynom((from fNode in f.nodes
                                     from gNode in g.nodes
-                                    select new Node(fNode.GetK() * gNode.GetK(), MultiplyPowers(fNode.GetDict().ToDictionary(k => k.Key, k => k.Value), gNode.GetDict().ToDictionary(k => k.Key, k => k.Value)))).ToList());
+                                    select new Node(fNode.GetK() * gNode.GetK(), MultiplyPowers(fNode.GetCopiedDict(), gNode.GetCopiedDict()))).ToList());
             }
         }
 
         public class Node
         {
-            //int power = 0;
             double k = 0;
             Dictionary<string, int> letterPower = new Dictionary<string, int>();
-            //string letter = "x";
 
             public int GetPower(string letter = "x") => letterPower[letter];
             public void SetPower(int power, string letter = "x") => letterPower[letter] = power;
@@ -230,7 +189,10 @@ namespace Polynomial
             public string GetLetter() => letterPower.Keys.ElementAt(0);
             public void SetLetter(string letter) => letterPower.Add(letter, 0);
 
+            public int GetFullPower() => letterPower.Values.Sum();
+
             public Dictionary<string, int> GetDict() => letterPower;
+            public Dictionary<string, int> GetCopiedDict() => letterPower.ToDictionary(k => k.Key, k => k.Value);
 
             public Node() { }
             public Node(double k, Dictionary<string, int> dict)
@@ -241,8 +203,6 @@ namespace Polynomial
             public Node(double k, int power, string letter = "x")
             {
                 this.k = k;
-                //this.power = power;
-                //this.letter = letter;
                 letterPower.Add(letter, power);
             }
         }
@@ -261,35 +221,38 @@ namespace Polynomial
                 double k = StringToDouble(textBox1.Text);
                 int power = StringToInt(textBox2.Text);
 
-                p.Add(new Node(k, power));
+                var temp = (power == 0)
+                ? new Node(k, 1, "")
+                : new Node(k, power);
 
-                textBox3.Text = p.GetRepresentation();
+                if (radioButton1.Checked)
+                {
+                    p.Add(temp);
+                    textBox3.Text = p.GetRepresentation();
+                }
+
+                if (radioButton2.Checked)
+                {
+                    f.Add(temp);
+                    textBox4.Text = f.GetRepresentation();
+                }
+
+                if (radioButton3.Checked)
+                {
+                    p.Add(temp);
+                    f.Add(temp);
+                    textBox3.Text = p.GetRepresentation();
+                    textBox4.Text = f.GetRepresentation();
+                }
             }
             catch (Exception exep)
             {
                 MessageBox.Show(exep.Message);
             }
         }
-        private void button2_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                double k = StringToDouble(textBox1.Text);
-                int power = StringToInt(textBox2.Text);
 
-                f.Add(new Node(k, power));
-
-                textBox4.Text = f.GetRepresentation();
-            }
-            catch (Exception exep)
-            {
-                MessageBox.Show(exep.Message);
-            }
-        }
         private void button3_Click(object sender, EventArgs e)
         {
-            //MessageBox.Show(p.GetRepresentation());
-            //MessageBox.Show(f.GetRepresentation());
             result.Clear();
             result = p + f;
             textBox5.Text = result.GetRepresentation();
@@ -304,17 +267,69 @@ namespace Polynomial
 
         private void button5_Click(object sender, EventArgs e)
         {
-            p.Clear();
-            p = new Polynom(textBox3.Text);
-            textBox3.Text = p.GetRepresentation(); //match.Groups[1].Value + " " + match.Groups[2].Value + " " + match.Groups[3].Value;
+            if (radioButton1.Checked)
+            {
+                p.Clear();
+                p = new Polynom(textBox3.Text);
+                textBox3.Text = p.GetRepresentation();
+            }
 
+            if (radioButton2.Checked)
+            {
+                f.Clear();
+                f = new Polynom(textBox4.Text);
+                textBox4.Text = f.GetRepresentation();
+            }
+
+            if (radioButton3.Checked)
+            {
+                p.Clear();
+                f.Clear();
+                p = new Polynom(textBox3.Text);
+                f = new Polynom(textBox4.Text);
+                textBox3.Text = p.GetRepresentation();
+                textBox4.Text = f.GetRepresentation();
+            }
         }
 
-        private void button6_Click(object sender, EventArgs e)
+        private void button7_Click(object sender, EventArgs e)
         {
-            f.Clear();
-            f = new Polynom(textBox4.Text);
+            if (radioButton1.Checked)
+                f = new Polynom(p.GetNodes());
+
+            if (radioButton2.Checked)
+                p = new Polynom(f.GetNodes());
+
+            if (radioButton3.Checked)
+            {
+                var temp = new Polynom(f.GetNodes());
+                f = new Polynom(p.GetNodes());
+                p = new Polynom(temp.GetNodes());
+            }
+
+            textBox3.Text = p.GetRepresentation();
             textBox4.Text = f.GetRepresentation();
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            if (openFileDialog1.ShowDialog() == DialogResult.Cancel) return;
+            string text = System.IO.File.ReadAllText(openFileDialog1.FileName);
+
+            string[] split = Regex.Split(text, @"\s+");
+
+            if (new Regex("[a-zA-Z]").Match(text).Length > 0)
+                p = new Polynom(string.Join(" ", split.Skip(1)));
+            else
+                p = new Polynom(Enumerable.Range(0, split.Skip(1).Count()).Select(i =>
+                    new Node(StringToDouble(split.ElementAt(i + 1)),
+                            (StringToInt(split.ElementAt(0)) - i == 0)
+                                ? 1
+                                : StringToInt(split.ElementAt(0)) - i,
+                            (StringToInt(split.ElementAt(0)) - i == 0)
+                                ? ""
+                                : "x")).ToList());
+            textBox3.Text = p.GetRepresentation();
         }
     }
 }
