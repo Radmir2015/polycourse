@@ -256,6 +256,7 @@ namespace Polynomial
             result.Clear();
             result = p + f;
             textBox5.Text = result.GetRepresentation();
+            textBox6.Text = "+";
         }
 
         private void button4_Click(object sender, EventArgs e)
@@ -263,6 +264,7 @@ namespace Polynomial
             result.Clear();
             result = p * f;
             textBox5.Text = result.GetRepresentation();
+            textBox6.Text = "*";
         }
 
         private void button5_Click(object sender, EventArgs e)
@@ -313,23 +315,73 @@ namespace Polynomial
 
         private void button2_Click(object sender, EventArgs e)
         {
-            if (openFileDialog1.ShowDialog() == DialogResult.Cancel) return;
-            string text = System.IO.File.ReadAllText(openFileDialog1.FileName);
+            try
+            {
+                if (openFileDialog1.ShowDialog() == DialogResult.Cancel) return;
+                string text = System.IO.File.ReadAllText(openFileDialog1.FileName);
 
-            string[] split = Regex.Split(text, @"\s+");
+                string[] split = Regex.Split(text, @"\s+");
 
-            if (new Regex("[a-zA-Z]").Match(text).Length > 0)
-                p = new Polynom(string.Join(" ", split.Skip(1)));
-            else
-                p = new Polynom(Enumerable.Range(0, split.Skip(1).Count()).Select(i =>
-                    new Node(StringToDouble(split.ElementAt(i + 1)),
-                            (StringToInt(split.ElementAt(0)) - i == 0)
-                                ? 1
-                                : StringToInt(split.ElementAt(0)) - i,
-                            (StringToInt(split.ElementAt(0)) - i == 0)
-                                ? ""
-                                : "x")).ToList());
-            textBox3.Text = p.GetRepresentation();
+                Polynom temp;
+
+                if (new Regex("[a-zA-Z]").Match(text).Length > 0)
+                    temp = new Polynom(string.Join(" ", split));
+                else
+                    temp = new Polynom(Enumerable.Range(0, split.Skip(1).Count()).Select(i =>
+                        new Node(StringToDouble(split.ElementAt(i + 1)),
+                                (StringToInt(split.ElementAt(0)) - i == 0)
+                                    ? 1
+                                    : StringToInt(split.ElementAt(0)) - i,
+                                (StringToInt(split.ElementAt(0)) - i == 0)
+                                    ? ""
+                                    : "x")).ToList());
+
+                if (radioButton1.Checked)
+                {
+                    p = new Polynom(temp.GetNodes());
+
+                    textBox3.Text = p.GetRepresentation();
+                }
+
+                if (radioButton2.Checked)
+                {
+                    f = new Polynom(temp.GetNodes());
+
+                    textBox4.Text = f.GetRepresentation();
+                }
+
+                if (radioButton3.Checked)
+                {
+                    p = new Polynom(temp.GetNodes());
+                    f = new Polynom(temp.GetNodes());
+
+                    textBox3.Text = p.GetRepresentation();
+                    textBox4.Text = f.GetRepresentation();
+                }
+            }
+            catch (Exception exep)
+            {
+                MessageBox.Show(exep.Message);
+            }
+        }
+
+        private void button6_Click(object sender, EventArgs e)
+        {
+            if (saveFileDialog1.ShowDialog() == DialogResult.Cancel) return;
+
+            string filename = saveFileDialog1.FileName;
+            string text = "";
+
+            if (radioButton1.Checked)
+                text = p.GetRepresentation();
+
+            if (radioButton2.Checked)
+                text = f.GetRepresentation();
+
+            if (radioButton3.Checked)
+                text = ((p.GetRepresentation() != "0" ? ("(" + p.GetRepresentation() + ")") : "") + " " + textBox6.Text + " " + (f.GetRepresentation() != "0" ? ("(" + f.GetRepresentation() + ")") : "") + " = " + result.GetRepresentation()).Trim();
+
+            System.IO.File.WriteAllText(filename, text);
         }
     }
 }
