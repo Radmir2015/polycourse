@@ -76,10 +76,34 @@ namespace Polynomial
 
                         string tempLetter = match.Groups[2].Value;
 
+                        if (match.Groups[2].Value != "" && match.Groups[3].Value == "0")
+                        {
+                            if (temp.GetDict().Count > 0)
+                                continue;
+                            tempLetter = "";
+                            tempPower = 0;
+                        }
+
+                        //if (match.Groups[2].Value == "" && match.Groups[3].Value == "0")
+                        //{
+                        //    tempK = Math.Sign(tempK);
+                        //    tempPower = 1;
+                        //}
+
+                        if (match.Groups[2].Value == "") //&& match.Groups[3].Value != "0")
+                        {
+                            tempK = Math.Sign(tempK) * Math.Pow(Math.Abs(tempK), tempPower);
+                            tempPower = 0;
+                        }
+
                         if (temp.GetDict().Count == 0)
                             temp = new Node(tempK, tempPower, tempLetter);
                         else
+                        {
+                            if (temp.GetDict().Count == 1 && temp.GetDict().ContainsKey("") && temp.GetDict()[""] == 0)
+                                temp.GetDict().Remove("");
                             temp.GetDict()[tempLetter] = tempPower;
+                        }
                     }
                     Add(temp);
                 }
@@ -133,12 +157,12 @@ namespace Polynomial
             {
                 return nodes.Count() == 0 ? "0" :
                     string.Join(" + ", nodes.Select(x =>
-                        (Math.Abs(x.GetK()) != 1 ? x.GetK().ToString() : (x.GetK() < 0 ? "-" : ""))
+                        (Math.Abs(x.GetK()) != 1 ? ((decimal)x.GetK()).ToString() : (x.GetK() < 0 ? "-" : ""))
                         + string.Join(" * ", x.GetDict().Select(y =>
                             ((y.Key == "" && Math.Abs(x.GetK()) == 1)
                             ? Math.Abs(x.GetK()).ToString()
                             : "") +
-                            y.Key + ((y.Value != 1)
+                            y.Key + ((y.Value != 1 && y.Value != 0)
                                 ? ("^" + y.Value)
                                 : "")))
                             )).Replace("+ -", "- ").Replace(",", ".");
