@@ -33,7 +33,7 @@ namespace Polynomial
             public Polynom() {}
             public Polynom(Node node) => Add(node);
             public Polynom(List<Node> nds) => nds.ForEach(x => Add(x));
-            public Polynom(string expression)
+            public Polynom(string expression, bool calculatingPowers = true)
             {
                 string[] unprocessedNodes = Regex.Split(Regex.Replace(expression, @"(?<=[0-9a-zA-Z]+)([\+-])", " $1"), @"(?<=[0-9a-zA-Z]+)\s+(?=[\+-])").Select(x => x.Trim()).ToArray();
                 unprocessedNodes = unprocessedNodes.Select(x => Regex.Replace(x, @"\s+", "")).ToArray();
@@ -84,13 +84,7 @@ namespace Polynomial
                             tempPower = 0;
                         }
 
-                        //if (match.Groups[2].Value == "" && match.Groups[3].Value == "0")
-                        //{
-                        //    tempK = Math.Sign(tempK);
-                        //    tempPower = 1;
-                        //}
-
-                        if (match.Groups[2].Value == "") //&& match.Groups[3].Value != "0")
+                        if (calculatingPowers && match.Groups[2].Value == "")
                         {
                             tempK = Math.Sign(tempK) * Math.Pow(Math.Abs(tempK), tempPower);
                             tempPower = 0;
@@ -238,6 +232,10 @@ namespace Polynomial
         Polynom f = new Polynom();
         Polynom result = new Polynom();
 
+        private bool isUnary = false;
+        private string lastOperation = "";
+        private int unaryPolynom = 0;
+
         private void button1_Click(object sender, EventArgs e)
         {
             try
@@ -246,7 +244,7 @@ namespace Polynomial
                 int power = StringToInt(textBox2.Text);
 
                 var temp = (power == 0)
-                ? new Node(k, 1, "")
+                ? new Node(k, 0, "")
                 : new Node(k, power);
 
                 if (radioButton1.Checked)
@@ -278,9 +276,57 @@ namespace Polynomial
         private void button3_Click(object sender, EventArgs e)
         {
             result.Clear();
-            result = p + f;
+            if (radioButton1.Checked)
+            {
+                isUnary = true;
+                unaryPolynom = 1;
+                result = new Polynom(new Node(1, 0, "")) * p;
+                textBox6.Text = "+ (унарный)";
+            }
+            if (radioButton2.Checked)
+            {
+                isUnary = true;
+                unaryPolynom = 2;
+                result = new Polynom(new Node(1, 0, "")) * f;
+                textBox6.Text = "+ (унарный)";
+            }
+            if (radioButton3.Checked)
+            {
+                isUnary = false;
+                unaryPolynom = 0;
+                result = p + f;
+                textBox6.Text = "+ (бинарный)";
+            }
+            lastOperation = "+";
             textBox5.Text = result.GetRepresentation();
-            textBox6.Text = "+";
+        }
+
+        private void button8_Click(object sender, EventArgs e)
+        {
+            result.Clear();
+            if (radioButton1.Checked)
+            {
+                isUnary = true;
+                unaryPolynom = 1;
+                result = new Polynom(new Node(-1, 0, "")) * p;
+                textBox6.Text = "- (унарный)";
+            }
+            if (radioButton2.Checked)
+            {
+                isUnary = true;
+                unaryPolynom = 2;
+                result = new Polynom(new Node(-1, 0, "")) * f;
+                textBox6.Text = "- (унарный)";
+            }
+            if (radioButton3.Checked)
+            {
+                isUnary = false;
+                unaryPolynom = 0;
+                result = p + new Polynom(new Node(-1, 0, "")) * f;
+                textBox6.Text = "- (бинарный)";
+            }
+            lastOperation = "-";
+            textBox5.Text = result.GetRepresentation();
         }
 
         private void button4_Click(object sender, EventArgs e)
@@ -289,6 +335,7 @@ namespace Polynomial
             result = p * f;
             textBox5.Text = result.GetRepresentation();
             textBox6.Text = "*";
+            lastOperation = "*";
         }
 
         private void button5_Click(object sender, EventArgs e)
@@ -296,14 +343,14 @@ namespace Polynomial
             if (radioButton1.Checked)
             {
                 p.Clear();
-                p = new Polynom(textBox3.Text);
+                p = new Polynom(textBox3.Text, checkBox1.Checked);
                 textBox3.Text = p.GetRepresentation();
             }
 
             if (radioButton2.Checked)
             {
                 f.Clear();
-                f = new Polynom(textBox4.Text);
+                f = new Polynom(textBox4.Text, checkBox1.Checked);
                 textBox4.Text = f.GetRepresentation();
             }
 
@@ -311,8 +358,8 @@ namespace Polynomial
             {
                 p.Clear();
                 f.Clear();
-                p = new Polynom(textBox3.Text);
-                f = new Polynom(textBox4.Text);
+                p = new Polynom(textBox3.Text, checkBox1.Checked);
+                f = new Polynom(textBox4.Text, checkBox1.Checked);
                 textBox3.Text = p.GetRepresentation();
                 textBox4.Text = f.GetRepresentation();
             }
@@ -403,7 +450,15 @@ namespace Polynomial
                 text = f.GetRepresentation();
 
             if (radioButton3.Checked)
-                text = ((p.GetRepresentation() != "0" ? ("(" + p.GetRepresentation() + ")") : "") + " " + textBox6.Text + " " + (f.GetRepresentation() != "0" ? ("(" + f.GetRepresentation() + ")") : "") + " = " + result.GetRepresentation()).Trim();
+            {
+                if (isUnary)
+                    text = lastOperation + "(" + ((unaryPolynom == 1)
+                            ? p.GetRepresentation()
+                            : (unaryPolynom == 2)
+                            ? f.GetRepresentation() : "") + ") = " + result.GetRepresentation();
+                else
+                    text = ((p.GetRepresentation() != "0" ? ("(" + p.GetRepresentation() + ")") : "") + " " + lastOperation + " " + (f.GetRepresentation() != "0" ? ("(" + f.GetRepresentation() + ")") : "") + " = " + result.GetRepresentation()).Trim();
+            }
 
             System.IO.File.WriteAllText(filename, text);
         }
