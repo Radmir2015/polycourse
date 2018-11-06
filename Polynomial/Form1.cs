@@ -125,13 +125,10 @@ namespace Polynomial
             public void Add(Node node)
             {
                 Node temp = new Node(node.GetK(), node.GetCopiedDict());
-                if (nodes.Any(x => CompareLetters(node, x) && ComparePowers(node, x) == 0)) // && nodes.Any(x => ComparePowers(node, x) == 0))
+                if (nodes.Any(x => CompareSets(node, x)))
                 {
-                    int count = nodes.Count();
-                    for (int i = 0; i < count; i++)
-                        if (CompareSets(nodes[i], node))
-                            nodes[i].SetK(nodes[i].GetK() + node.GetK());
-                    //nodes = nodes.Where(x => x.GetK() != 0).ToList();
+                    Node found = nodes.First(x => CompareSets(node, x));
+                    found.SetK(found.GetK() + node.GetK());
                 }
                 else
                     nodes.Insert(nodes.TakeWhile(x => ComparePowers(x, node) >= 0).Count(), temp);
@@ -173,6 +170,7 @@ namespace Polynomial
                     if (!moreLetters.ContainsKey(x.Key))
                         moreLetters[x.Key] = 0;
                     moreLetters[x.Key] += x.Value;
+                    if (moreLetters[x.Key] == 0) moreLetters.Remove(x.Key);
                 }
 
                 return moreLetters;
@@ -236,6 +234,18 @@ namespace Polynomial
         private string lastOperation = "";
         private int unaryPolynom = 0;
 
+        private List<string> prepareLetters()
+        {
+            List<string> temp = new HashSet<string>(
+                        (radioButton1.Checked ? p : radioButton2.Checked ? f : result)
+                        .GetNodes().Select(x =>
+                            x.GetCopiedDict().Keys.ToList())
+                            .SelectMany(i => i).Where(x => x != "")).ToList();
+            label7.Text = "(" + string.Join(", ", temp) + ") =";
+
+            return temp;
+        }
+
         private void button1_Click(object sender, EventArgs e)
         {
             try
@@ -266,10 +276,12 @@ namespace Polynomial
                     textBox3.Text = p.GetRepresentation();
                     textBox4.Text = f.GetRepresentation();
                 }
+
+                prepareLetters();
             }
             catch (Exception exep)
             {
-                MessageBox.Show(exep.Message);
+                MessageBox.Show(exep.Message, "Добавление узла");
             }
         }
 
@@ -334,7 +346,7 @@ namespace Polynomial
             result.Clear();
             result = p * f;
             textBox5.Text = result.GetRepresentation();
-            textBox6.Text = "*";
+            textBox6.Text = "* (бинарный)";
             lastOperation = "*";
         }
 
@@ -343,14 +355,14 @@ namespace Polynomial
             if (radioButton1.Checked)
             {
                 p.Clear();
-                p = new Polynom(textBox3.Text, checkBox1.Checked);
+                p = new Polynom(textBox3.Text);
                 textBox3.Text = p.GetRepresentation();
             }
 
             if (radioButton2.Checked)
             {
                 f.Clear();
-                f = new Polynom(textBox4.Text, checkBox1.Checked);
+                f = new Polynom(textBox4.Text);
                 textBox4.Text = f.GetRepresentation();
             }
 
@@ -358,11 +370,13 @@ namespace Polynomial
             {
                 p.Clear();
                 f.Clear();
-                p = new Polynom(textBox3.Text, checkBox1.Checked);
-                f = new Polynom(textBox4.Text, checkBox1.Checked);
+                p = new Polynom(textBox3.Text);
+                f = new Polynom(textBox4.Text);
                 textBox3.Text = p.GetRepresentation();
                 textBox4.Text = f.GetRepresentation();
             }
+
+            prepareLetters();
         }
 
         private void button7_Click(object sender, EventArgs e)
@@ -379,6 +393,8 @@ namespace Polynomial
                 f = new Polynom(p.GetNodes());
                 p = new Polynom(temp.GetNodes());
             }
+
+            prepareLetters();
 
             textBox3.Text = p.GetRepresentation();
             textBox4.Text = f.GetRepresentation();
@@ -429,10 +445,12 @@ namespace Polynomial
                     textBox3.Text = p.GetRepresentation();
                     textBox4.Text = f.GetRepresentation();
                 }
+
+                prepareLetters();
             }
             catch (Exception exep)
             {
-                MessageBox.Show(exep.Message);
+                MessageBox.Show(exep.Message, "Открытие файла");
             }
         }
 
@@ -461,6 +479,94 @@ namespace Polynomial
             }
 
             System.IO.File.WriteAllText(filename, text);
+        }
+
+        private void radioButton1_CheckedChanged(object sender, EventArgs e)
+        {
+            prepareLetters();
+        }
+
+        private void radioButton2_CheckedChanged(object sender, EventArgs e)
+        {
+            prepareLetters();
+        }
+
+        private void radioButton3_CheckedChanged(object sender, EventArgs e)
+        {
+            prepareLetters();
+        }
+
+        private void button12_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                Polynom temp = radioButton1.Checked ? p : radioButton2.Checked ? f : result;
+                temp.DeleteByPower(StringToInt(textBox8.Text));
+            }
+            catch (Exception exep)
+            {
+                MessageBox.Show(exep.Message, "Удаление узлов по степени");
+            }
+            if (radioButton1.Checked)
+                textBox3.Text = p.GetRepresentation();
+
+            if (radioButton2.Checked)
+                textBox4.Text = f.GetRepresentation();
+
+            if (radioButton3.Checked)
+                textBox5.Text = result.GetRepresentation();
+        }
+
+        private void button10_Click(object sender, EventArgs e)
+        {
+            if (radioButton3.Checked)
+            {
+                p.Clear();
+                f.Clear();
+            }
+            else
+                (radioButton1.Checked ? p : f).Clear();
+
+            textBox3.Text = p.GetRepresentation();
+            textBox4.Text = f.GetRepresentation();
+            textBox5.Text = result.GetRepresentation();
+        }
+
+        private void button11_Click(object sender, EventArgs e)
+        {
+            result.Clear();
+
+            textBox5.Text = result.GetRepresentation();
+        }
+
+        private void button9_Click(object sender, EventArgs e)
+        {
+            Polynom temp = radioButton1.Checked ? p : radioButton2.Checked ? f : result;
+            string answer = "f" + label7.Text + " " + temp.GetRepresentation() + "\n";
+
+            try
+            {
+
+                List<string> letters = prepareLetters();
+                List<double> nums = textBox7.Text.Split(' ').Select(StringToDouble).ToList();
+
+                if (letters.Count() > nums.Count()) return;
+
+                answer += "f(" + string.Join(", ", nums) + ") = " + letters.Aggregate(temp.GetRepresentation(), (x, y) =>
+                        x.Replace(y, "(" + nums[letters.IndexOf(y)].ToString() + ")")) + " = ";
+
+                answer += temp.GetNodes().Select(x =>
+                        x.GetK() * x.GetCopiedDict().Select(kv =>
+                            kv.Key == ""
+                            ? 1
+                            : Math.Pow(nums[letters.IndexOf(kv.Key)], kv.Value)).Sum()).Sum().ToString();
+
+                MessageBox.Show(answer, "Значение функции в точке");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Ввод аргументов функции");
+            }
         }
     }
 }
