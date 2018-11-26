@@ -38,10 +38,7 @@ namespace Polynomial
                 string[] unprocessedNodes = Regex.Split(Regex.Replace(expression, @"(?<=[0-9a-zA-Z]+)([\+-])", " $1"), @"(?<=[0-9a-zA-Z]+)\s+(?=[\+-])").Select(x => x.Trim()).ToArray();
                 unprocessedNodes = unprocessedNodes.Select(x => Regex.Replace(x, @"\s+", "")).ToArray();
                 
-                //Regex regex = new Regex(@"([\+-]?(?:\s*)\d*)\s*\*?\s*([a-zA-Z]?)\s*\^?\s*([\+-]?(?:\s*)\d*)");
                 Regex regex = new Regex(@"([\+-]?\d*\.?\d*)\*?([a-zA-Z]?)\^?([\+-]?\d*)");
-
-                //MessageBox.Show(string.Join(";", unprocessedNodes));
 
                 foreach (string node in unprocessedNodes)
                 {
@@ -52,11 +49,9 @@ namespace Polynomial
                     {
                         Match match = matches[i];
 
-                        //MessageBox.Show(match.Groups[1].Value + ";" + match.Groups[2].Value + ";" + match.Groups[3].Value);
-
                         if (match.Groups[1].Value == "" && match.Groups[2].Value == "" || unprocessedNodes.Any(x => x == ""))
                         {
-                            MessageBox.Show("Fatal error");
+                            MessageBox.Show("Parse error");
                             break;
                         }
 
@@ -310,6 +305,7 @@ namespace Polynomial
                 textBox6.Text = "+ (бинарный)";
             }
             lastOperation = "+";
+            prepareLetters();
             textBox5.Text = result.GetRepresentation();
         }
 
@@ -338,6 +334,7 @@ namespace Polynomial
                 textBox6.Text = "- (бинарный)";
             }
             lastOperation = "-";
+            prepareLetters();
             textBox5.Text = result.GetRepresentation();
         }
 
@@ -345,6 +342,7 @@ namespace Polynomial
         {
             result.Clear();
             result = p * f;
+            prepareLetters();
             textBox5.Text = result.GetRepresentation();
             textBox6.Text = "* (бинарный)";
             lastOperation = "*";
